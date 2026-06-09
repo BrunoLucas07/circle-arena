@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Circle Arena</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Projeto distribuido com MQTT</p>
+          <h1>Circle Arena</h1>
+        </div>
+        <div class="status-strip" aria-live="polite">
+          <span id="statusDot" class="dot"></span>
+          <span id="connectionStatus">Modo local</span>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="panel controls" aria-label="Configuracoes da partida">
+          <div class="field">
+            <label for="playerName">Jogador</label>
+            <input id="playerName" maxlength="16" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="brokerUrl">Broker WebSocket</label>
+            <input id="brokerUrl" value="wss://broker.hivemq.com:8884/mqtt" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="brokerUser">Usuario MQTT</label>
+            <input id="brokerUser" placeholder="opcional" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="brokerPass">Senha MQTT</label>
+            <input id="brokerPass" type="password" placeholder="opcional" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="roomTopic">Sala MQTT</label>
+            <input id="roomTopic" value="circle-arena-demo" spellcheck="false">
+          </div>
+          <div class="split">
+            <button id="connectBtn" class="primary" type="button">Conectar</button>
+            <button id="localBtn" type="button">Modo local</button>
+          </div>
+          <div class="split">
+            <button id="simulateBtn" type="button">Simular rival</button>
+            <button id="resetBtn" type="button">Reiniciar</button>
+          </div>
+          <div class="split">
+            <button id="deviceBtn" type="button">Piscar ESP32</button>
+            <button id="pingBtn" type="button">Ping MQTT</button>
+          </div>
+          <div class="hint">
+            Use WASD ou setas. Colete energia para crescer, evite zonas vermelhas e engula bolinhas menores.
+          </div>
+        </aside>
+
+        <section class="arena-wrap" aria-label="Arena do jogo">
+          <canvas id="game" width="960" height="620"></canvas>
+          <div class="hud">
+            <div>
+              <strong id="score">0</strong>
+              <span>pontos</span>
+            </div>
+            <div>
+              <strong id="playersOnline">1</strong>
+              <span>online</span>
+            </div>
+            <div>
+              <strong id="latency">--</strong>
+              <span>latencia</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel telemetry" aria-label="Telemetria MQTT">
+          <div class="section-title">
+            <h2>Telemetria</h2>
+            <span id="topicLabel">offline</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Topico de comandos</dt>
+              <dd id="cmdTopic">local</dd>
+            </div>
+            <div>
+              <dt>Topico de estado</dt>
+              <dd id="stateTopic">local</dd>
+            </div>
+            <div>
+              <dt>Última mensagem</dt>
+              <dd>
+                <textarea id="lastPayload" class="payload-console" readonly aria-label="Última mensagem recebida">nenhuma</textarea>
+              </dd>
+            </div>
+          </dl>
+          <ol id="log" class="log"></ol>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

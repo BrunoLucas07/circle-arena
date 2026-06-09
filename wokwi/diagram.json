@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "author": "Codex",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "up", "top": -80, "left": 180, "attrs": { "color": "green", "label": "UP" } },
+    { "type": "wokwi-pushbutton", "id": "down", "top": 90, "left": 180, "attrs": { "color": "blue", "label": "DOWN" } },
+    { "type": "wokwi-pushbutton", "id": "left", "top": 10, "left": 95, "attrs": { "color": "yellow", "label": "LEFT" } },
+    { "type": "wokwi-pushbutton", "id": "right", "top": 10, "left": 265, "attrs": { "color": "red", "label": "RIGHT" } },
+    { "type": "wokwi-led", "id": "led", "top": -80, "left": 315, "attrs": { "color": "limegreen", "label": "MQTT" } }
+  ],
+  "connections": [
+    [ "up:1.l", "esp:32", "green", [] ],
+    [ "up:2.l", "esp:GND.1", "black", [] ],
+    [ "down:1.l", "esp:33", "blue", [] ],
+    [ "down:2.l", "esp:GND.1", "black", [] ],
+    [ "left:1.l", "esp:25", "yellow", [] ],
+    [ "left:2.l", "esp:GND.1", "black", [] ],
+    [ "right:1.l", "esp:26", "red", [] ],
+    [ "right:2.l", "esp:GND.1", "black", [] ],
+    [ "led:A", "esp:2", "green", [] ],
+    [ "led:C", "esp:GND.2", "black", [] ]
+  ]
+}
