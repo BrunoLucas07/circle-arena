@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Circle Arena</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- MQTT.js permite que o navegador conecte ao broker usando MQTT over WebSocket. -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js" defer></script>
+    <!-- app.js concentra a logica do jogo, do canvas e da comunicacao MQTT. -->
     <script src="app.js" defer></script>
   </head>
   <body>
     <main class="shell">
+      <!-- Barra superior com nome do projeto e status da conexao MQTT/local. -->
       <section class="topbar">
         <div>
           <p class="eyebrow">Projeto distribuido com MQTT</p>
@@ -22,6 +25,7 @@
       </section>
 
       <section class="layout">
+        <!-- Painel de configuracao: jogador, broker, sala e botoes de controle. -->
         <aside class="panel controls" aria-label="Configuracoes da partida">
           <div class="field">
             <label for="playerName">Jogador</label>
@@ -60,8 +64,10 @@
           </div>
         </aside>
 
+        <!-- Area central do jogo. O canvas e desenhado pelo JavaScript. -->
         <section class="arena-wrap" aria-label="Arena do jogo">
           <canvas id="game" width="960" height="620"></canvas>
+          <!-- HUD com pontuacao, jogadores online e latencia MQTT. -->
           <div class="hud">
             <div>
               <strong id="score">0</strong>
@@ -78,6 +84,7 @@
           </div>
         </section>
 
+        <!-- Painel de telemetria: mostra topicos e mensagens MQTT recebidas/publicadas. -->
         <aside class="panel telemetry" aria-label="Telemetria MQTT">
           <div class="section-title">
             <h2>Telemetria</h2>
@@ -95,6 +102,7 @@
             <div>
               <dt>Última mensagem</dt>
               <dd>
+                <!-- Console de JSON usado para demonstrar o payload MQTT em tempo real. -->
                 <textarea id="lastPayload" class="payload-console" readonly aria-label="Última mensagem recebida">nenhuma</textarea>
               </dd>
             </div>

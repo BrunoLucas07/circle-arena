@@ -1,6 +1,10 @@
+// Canvas onde a arena e desenhada. O contexto 2D e usado para criar grade,
+// bolinhas, energia, obstaculos, nomes e placar visual dentro do jogo.
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 
+// Referencias dos elementos HTML usados pelo JavaScript. Guardar tudo em `ui`
+// evita procurar os mesmos elementos varias vezes durante a execucao.
 const ui = {
   statusDot: document.querySelector("#statusDot"),
   connectionStatus: document.querySelector("#connectionStatus"),
@@ -25,6 +29,8 @@ const ui = {
   log: document.querySelector("#log")
 };
 
+// Configuracoes gerais do jogo: cores, tamanho das bolinhas e estado global.
+// O objeto `state` funciona como a memoria atual da partida e da conexao MQTT.
 const colors = ["#46d48f", "#49c7e8", "#ffd166", "#ff8f5a", "#c792ea", "#ff5d73"];
 const MIN_PLAYER_RADIUS = 16;
 const MAX_PLAYER_RADIUS = 58;
@@ -52,18 +58,26 @@ const state = {
   }
 };
 
+// Limita um numero entre minimo e maximo. Isso impede que jogador, velocidade
+// ou posicao ultrapassem limites definidos pela arena.
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+// Gera um numero aleatorio dentro de um intervalo. E usado para espalhar
+// jogadores, energia e obstaculos pela arena.
 function randomBetween(min, max) {
   return min + Math.random() * (max - min);
 }
 
+// Calcula o raio da bolinha com base na pontuacao. Quanto mais pontos,
+// maior a bolinha, respeitando o tamanho minimo e maximo.
 function playerRadius(player) {
   return clamp(MIN_PLAYER_RADIUS + Math.sqrt(Math.max(0, player.score)) * 1.18, MIN_PLAYER_RADIUS, MAX_PLAYER_RADIUS);
 }
 
+// Reposiciona um jogador na arena. Usado ao reiniciar ou quando uma bolinha
+// e engolida por outra.
 function respawnPlayer(player, score = 0) {
   const radius = playerRadius(player);
   player.x = randomBetween(radius + 18, canvas.width - radius - 18);
@@ -74,6 +88,7 @@ function respawnPlayer(player, score = 0) {
   player.updatedAt = Date.now();
 }
 
+// Adiciona mensagens curtas no historico visual da interface.
 function addLog(message) {
   const item = document.createElement("li");
   item.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
@@ -81,15 +96,18 @@ function addLog(message) {
   while (ui.log.children.length > 9) ui.log.lastElementChild.remove();
 }
 
+// Atualiza a caixa "Ultima mensagem" com o JSON publicado ou recebido.
 function setLastPayload(value) {
   ui.lastPayload.value = value;
   ui.lastPayload.scrollTop = ui.lastPayload.scrollHeight;
 }
 
+// Limpa o nome da sala para virar uma parte segura de topico MQTT.
 function sanitizeTopic(value) {
   return value.trim().replace(/[^a-zA-Z0-9_-]/g, "-") || "circle-arena-demo";
 }
 
+// Cria a estrutura padrao de um jogador local, remoto ou simulado.
 function playerTemplate(id, name, isLocal = false) {
   const color = colors[Math.abs([...id].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % colors.length];
   return {
@@ -107,6 +125,7 @@ function playerTemplate(id, name, isLocal = false) {
   };
 }
 
+// Garante que o jogador local exista dentro do mapa de jogadores.
 function localPlayer() {
   if (!state.players.has(state.id)) {
     state.players.set(state.id, playerTemplate(state.id, ui.playerName.value, true));
@@ -114,6 +133,7 @@ function localPlayer() {
   return state.players.get(state.id);
 }
 
+// Cria os itens da arena: energia para coletar e obstaculos vermelhos.
 function seedWorld() {
   state.energy = Array.from({ length: 18 }, (_, index) => ({
     id: `e${index}`,
@@ -132,17 +152,21 @@ function seedWorld() {
   }));
 }
 
+// Atualiza o status visual da conexao na parte superior da tela.
 function setStatus(label, variant = "local") {
   ui.connectionStatus.textContent = label;
   ui.statusDot.className = `dot ${variant === "online" ? "online" : variant === "error" ? "error" : ""}`;
 }
 
+// Mostra na interface os topicos MQTT usados pela sala atual.
 function syncTopicLabels() {
   ui.topicLabel.textContent = state.mode === "mqtt" ? state.room : "offline";
   ui.cmdTopic.textContent = state.topics.cmd === "local" ? "local" : `${state.topics.cmd} (QoS 1)`;
   ui.stateTopic.textContent = state.topics.state === "local" ? "local" : `${state.topics.state} (QoS 0, wildcard)`;
 }
 
+// Publica uma mensagem MQTT. O payload vira JSON e tambem aparece no console
+// de ultima mensagem, o que ajuda a demonstrar o trafego MQTT.
 function publish(topic, payload, options = {}) {
   const text = JSON.stringify(payload);
   setLastPayload(text);
@@ -151,6 +175,8 @@ function publish(topic, payload, options = {}) {
   }
 }
 
+// Publica o estado do jogador local: posicao, pontuacao, raio e cor.
+// Usa QoS 0 porque estado muda com frequencia e uma atualizacao nova substitui a antiga.
 function publishLocalState() {
   const p = localPlayer();
   publish(`${state.baseTopic}/jogadores/${state.id}/estado`, {
@@ -166,6 +192,8 @@ function publishLocalState() {
   }, { qos: 0, retain: true });
 }
 
+// Publica presenca online/offline. Usa QoS 1 e retained para que novos
+// clientes recebam o ultimo status conhecido.
 function publishPresence(status) {
   publish(`${state.baseTopic}/jogadores/${state.id}/presenca`, {
     type: "presence",
@@ -176,6 +204,8 @@ function publishPresence(status) {
   }, { qos: 1, retain: true });
 }
 
+// Trata toda mensagem MQTT recebida. Cada tipo de payload altera uma parte
+// diferente do jogo: presenca, estado, comando, ping/pong ou evento de colisao.
 function handleMessage(topic, raw) {
   let payload;
   try {
@@ -187,6 +217,7 @@ function handleMessage(topic, raw) {
 
   setLastPayload(JSON.stringify(payload, null, 2));
 
+  // Mensagens de presenca indicam se outro cliente entrou ou saiu da sala.
   if (payload.type === "presence" && payload.id !== state.id) {
     addLog(`${payload.name || payload.id}: ${payload.status}`);
     if (payload.status === "offline") {
@@ -194,6 +225,7 @@ function handleMessage(topic, raw) {
     }
   }
 
+  // Mensagens de estado atualizam jogadores remotos na arena.
   if (payload.type === "state" && payload.id !== state.id) {
     const player = state.players.get(payload.id) || playerTemplate(payload.id, payload.name || "Remoto");
     Object.assign(player, {
@@ -207,6 +239,7 @@ function handleMessage(topic, raw) {
     state.players.set(payload.id, player);
   }
 
+  // Evento usado para sincronizar quando outro jogador engole a bolinha local.
   if (payload.type === "eaten" && payload.source !== state.id && payload.target === state.id) {
     const p = localPlayer();
     respawnPlayer(p, 0);
@@ -214,6 +247,7 @@ function handleMessage(topic, raw) {
     addLog(`${payload.by || "Outro jogador"} engoliu sua bolinha`);
   }
 
+  // Comandos externos podem vir do ESP32, do terminal Mosquitto ou de outro cliente.
   const isExternalCommand = payload.type === "cmd" && payload.source !== state.id;
   const isCommandForThisClient = payload.target === state.id || payload.target === "all" || !payload.target;
   if (isExternalCommand && isCommandForThisClient) {
@@ -223,6 +257,7 @@ function handleMessage(topic, raw) {
     addLog(`comando recebido: dx=${payload.dx || 0}, dy=${payload.dy || 0}`);
   }
 
+  // Ping e pong medem a latencia entre clientes pelo broker MQTT.
   if (payload.type === "ping") {
     publish(`${state.baseTopic}/telemetria/ping`, { type: "pong", id: state.id, t: payload.t }, { qos: 0 });
   }
@@ -233,6 +268,8 @@ function handleMessage(topic, raw) {
   }
 }
 
+// Conecta a interface ao broker MQTT, monta os topicos da sala, configura LWT
+// e assina os topicos usados pelo jogo.
 function connectMqtt() {
   if (!window.mqtt) {
     setStatus("Biblioteca MQTT nao carregou", "error");
@@ -253,6 +290,8 @@ function connectMqtt() {
   syncTopicLabels();
   setStatus("Conectando...", "local");
 
+  // Last Will and Testament: se este cliente cair sem avisar, o broker
+  // publica automaticamente presenca offline.
   const options = {
     clientId: `circle_arena_${state.id}_${Date.now()}`,
     clean: true,
@@ -282,6 +321,9 @@ function connectMqtt() {
     state.mode = "mqtt";
     state.connected = true;
     setStatus("Conectado ao MQTT", "online");
+
+    // Assinaturas com wildcard + recebem dados de qualquer jogador sem
+    // misturar estado, comando e presenca em um unico topico.
     state.client.subscribe(state.topics.state, { qos: 0 });
     state.client.subscribe(state.topics.cmdWildcard, { qos: 1 });
     state.client.subscribe(state.topics.presence, { qos: 1 });
@@ -303,6 +345,7 @@ function connectMqtt() {
   });
 }
 
+// Desliga a conexao MQTT e volta para a simulacao local.
 function enableLocalMode() {
   if (state.connected) publishPresence("offline");
   if (state.client) state.client.end(true);
@@ -316,6 +359,8 @@ function enableLocalMode() {
   addLog("modo local ativado");
 }
 
+// Move o jogador local usando teclado. A bolinha fica mais lenta quando cresce,
+// o que deixa a logica parecida com jogos no estilo Agar.io.
 function movePlayer(player, dt) {
   const radius = playerRadius(player);
   const sizePenalty = clamp(1.1 - (radius - MIN_PLAYER_RADIUS) / 80, 0.55, 1);
@@ -339,6 +384,7 @@ function movePlayer(player, dt) {
   player.y = clamp(player.y + player.vy * dt, radius, canvas.height - radius - 64);
 }
 
+// Rival local usado para demonstracao sem precisar de outro navegador.
 function updateSimulator(dt) {
   const id = "bot-rival";
   if (!state.simulator) {
@@ -367,6 +413,7 @@ function updateSimulator(dt) {
   state.players.set(id, bot);
 }
 
+// Detecta coleta de energia. Ao coletar, o jogador ganha pontos e pode crescer.
 function collectEnergy(player) {
   const radius = playerRadius(player);
   state.energy.forEach((item) => {
@@ -380,6 +427,7 @@ function collectEnergy(player) {
   });
 }
 
+// Obstaculos vermelhos reduzem pontuacao e empurram a bolinha para tras.
 function applyHazards(player) {
   const radius = playerRadius(player);
   for (const hazard of state.hazards) {
@@ -391,6 +439,7 @@ function applyHazards(player) {
   }
 }
 
+// Verifica se uma bolinha pode engolir outra comparando tamanho e distancia.
 function canEatPlayer(hunter, prey) {
   const hunterRadius = playerRadius(hunter);
   const preyRadius = playerRadius(prey);
@@ -398,6 +447,8 @@ function canEatPlayer(hunter, prey) {
   return hunterRadius > preyRadius * EAT_SIZE_RATIO && distance < hunterRadius * 0.82;
 }
 
+// Aplica o evento de engolir: soma pontos para quem venceu e reposiciona
+// a bolinha menor. Em MQTT, publica evento para sincronizar o outro cliente.
 function eatPlayer(hunter, prey) {
   const gain = Math.max(25, Math.round(prey.score * 0.65 + playerRadius(prey)));
   hunter.score += gain;
@@ -423,6 +474,7 @@ function eatPlayer(hunter, prey) {
   }
 }
 
+// Percorre pares de jogadores para resolver colisoes de "comer" bolinhas menores.
 function resolvePlayerEating() {
   const players = Array.from(state.players.values());
   for (let i = 0; i < players.length; i += 1) {
@@ -441,6 +493,8 @@ function resolvePlayerEating() {
   }
 }
 
+// Atualiza toda a simulacao: movimento, coleta, obstaculos, colisao,
+// publicacao de estado e ping periodico.
 function updateWorld(dt) {
   const p = localPlayer();
   p.name = ui.playerName.value || "Jogador";
@@ -478,6 +532,7 @@ function updateWorld(dt) {
   ui.playersOnline.textContent = state.players.size;
 }
 
+// Desenha a grade de fundo da arena.
 function drawGrid() {
   ctx.fillStyle = "#0c0f14";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -498,6 +553,7 @@ function drawGrid() {
   }
 }
 
+// Desenha obstaculos, energia e jogadores no canvas.
 function drawWorld() {
   drawGrid();
 
@@ -542,6 +598,8 @@ function drawWorld() {
   }
 }
 
+// Loop principal da animacao. Ele atualiza o mundo e redesenha a arena
+// a cada quadro do navegador.
 let previousTime = performance.now();
 function loop(now) {
   const dt = Math.min(0.032, (now - previousTime) / 1000);
@@ -551,6 +609,7 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+// Reinicia a partida local, limpa jogadores e recria energia/obstaculos.
 function resetGame() {
   const name = ui.playerName.value;
   state.players.clear();
@@ -559,6 +618,7 @@ function resetGame() {
   addLog("partida reiniciada");
 }
 
+// Conecta botoes e teclado as funcoes do jogo.
 function bindEvents() {
   ui.playerName.value = `Jogador-${state.id.slice(0, 3)}`;
   ui.connectBtn.addEventListener("click", connectMqtt);
@@ -593,6 +653,9 @@ function bindEvents() {
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"].includes(event.code)) {
       event.preventDefault();
       state.keys.add(event.code);
+
+      // Publica comando de teclado com QoS 1 porque comando perdido afeta
+      // diretamente a interacao do jogador.
       publish(state.topics.cmd, {
         type: "cmd",
         source: state.id,
@@ -610,6 +673,8 @@ function bindEvents() {
   });
 }
 
+// Inicializacao do jogo: registra eventos, cria o mundo, inicia o jogador
+// local, atualiza labels e comeca o loop de animacao.
 bindEvents();
 seedWorld();
 resetGame();

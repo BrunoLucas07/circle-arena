@@ -1,3 +1,4 @@
+/* Variaveis de cor usadas em toda a interface. */
 :root {
   color-scheme: dark;
   --bg: #111318;
@@ -12,10 +13,12 @@
   --red: #ff5d73;
 }
 
+/* Garante que padding e borda entrem no calculo de largura dos elementos. */
 * {
   box-sizing: border-box;
 }
 
+/* Fundo geral e fonte base da aplicacao. */
 html,
 body {
   margin: 0;
@@ -27,18 +30,21 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+/* Botoes, campos e textarea usam a mesma fonte do restante da tela. */
 button,
 input,
 textarea {
   font: inherit;
 }
 
+/* Container principal que centraliza a aplicacao. */
 .shell {
   width: min(1460px, calc(100vw - 32px));
   margin: 0 auto;
   padding: 24px 0;
 }
 
+/* Barra superior com titulo do projeto e status de conexao. */
 .topbar {
   display: flex;
   align-items: end;
@@ -47,6 +53,7 @@ textarea {
   margin-bottom: 18px;
 }
 
+/* Texto pequeno acima do titulo principal. */
 .eyebrow {
   margin: 0 0 4px;
   color: var(--cyan);
@@ -70,6 +77,7 @@ h2 {
   font-size: 1.05rem;
 }
 
+/* Indicador visual de conexao: local, online ou erro. */
 .status-strip {
   display: inline-flex;
   align-items: center;
@@ -100,6 +108,7 @@ h2 {
   box-shadow: 0 0 18px var(--red);
 }
 
+/* Grid principal: controles, arena e telemetria. */
 .layout {
   display: grid;
   grid-template-columns: minmax(250px, 300px) minmax(420px, 1fr) minmax(260px, 330px);
@@ -107,6 +116,7 @@ h2 {
   align-items: stretch;
 }
 
+/* Paineis laterais reaproveitam borda, fundo e sombra. */
 .panel {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -125,6 +135,7 @@ h2 {
   margin-bottom: 14px;
 }
 
+/* Rotulos dos campos e topicos ficam em caixa alta para leitura rapida. */
 label,
 dt {
   color: var(--muted);
@@ -133,6 +144,7 @@ dt {
   text-transform: uppercase;
 }
 
+/* Campos de configuracao do broker, usuario, senha e sala. */
 input {
   width: 100%;
   min-height: 42px;
@@ -149,6 +161,7 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(73, 199, 232, 0.16);
 }
 
+/* Console que mostra o ultimo payload MQTT em JSON. */
 .payload-console {
   width: 100%;
   min-height: 118px;
@@ -171,6 +184,7 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(73, 199, 232, 0.16);
 }
 
+/* Agrupa botoes em duas colunas no painel de controle. */
 .split {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -178,6 +192,7 @@ input:focus {
   margin-top: 10px;
 }
 
+/* Estilo base dos botoes. */
 button {
   min-height: 42px;
   border: 1px solid var(--line);
@@ -198,6 +213,7 @@ button.primary {
   color: #061016;
 }
 
+/* Caixa com instrucao curta de jogabilidade. */
 .hint {
   margin-top: 16px;
   padding: 12px;
@@ -209,6 +225,7 @@ button.primary {
   line-height: 1.35;
 }
 
+/* Area central onde o canvas ocupa o espaco do jogo. */
 .arena-wrap {
   position: relative;
   min-height: 520px;
@@ -218,6 +235,7 @@ button.primary {
   background: #0c0f14;
 }
 
+/* Canvas desenhado pelo app.js. */
 canvas {
   display: block;
   width: 100%;
@@ -225,6 +243,7 @@ canvas {
   min-height: 520px;
 }
 
+/* HUD sobreposto ao canvas com pontos, online e latencia. */
 .hud {
   position: absolute;
   left: 12px;
@@ -257,6 +276,7 @@ canvas {
   text-transform: uppercase;
 }
 
+/* Cabecalho do painel de telemetria. */
 .section-title {
   display: flex;
   justify-content: space-between;
@@ -313,6 +333,7 @@ dd {
   overflow-wrap: anywhere;
 }
 
+/* Ajustes para telas menores: os paineis viram uma coluna. */
 @media (max-width: 1050px) {
   .layout {
     grid-template-columns: 1fr;
@@ -324,6 +345,7 @@ dd {
   }
 }
 
+/* Ajustes extras para celular. */
 @media (max-width: 620px) {
   .shell {
     width: min(100vw - 20px, 1460px);
